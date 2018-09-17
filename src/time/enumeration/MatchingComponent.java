@@ -13,6 +13,6 @@ public enum MatchingComponent {
 	WEEKDAY,
 	WEEKDAY_ORDINAL,
 	QUARTER,
-	WEEK_OF_MONTH,
+	WEEK_OF_MONTH,  // the week number within the given month
 	WEEK_OF_YEAR;
 }

@@ -66,8 +66,7 @@ public class Enumerator {
 		weekOfMonth = matchingComponents.get(MatchingComponent.WEEK_OF_MONTH);
 		weekOfYear = matchingComponents.get(MatchingComponent.WEEK_OF_YEAR);
 		
-		assert  quarter == null && weekOfMonth == null && weekOfYear == null :
-			"Not implemented yet for provided quarter, weekOfMonth and weekOfYear";
+		assert  quarter == null : "Not implemented yet for provided quarter";
 		
 		matchFirst();
 	}
@@ -80,26 +79,72 @@ public class Enumerator {
 				.withHour(hour != null? hour : originDateTime.getHour())
 				.withMinute(minute != null ? minute : originDateTime.getMinute());
 		
+		if (quarter != null) {
+			matchingDateTime = matchingDateTime
+					.withMonth(matchingDateTime.get(IsoFields.QUARTER_OF_YEAR) * 3)
+					.with(TemporalAdjusters.lastDayOfMonth())
+					.plusDays(1)
+					.withHour(hour != null? hour : 0)
+					.withMinute(minute != null ? minute : 0);
+		}
+		
+		if (weekOfYear != null) {
+			LocalDateTime newDateTime = matchingDateTime
+					.with(WeekFields.ISO.weekOfYear(), weekOfYear) // locate week of year
+					.with(WeekFields.ISO.dayOfWeek(), 1); // locate first day of week
+			if (matchingDirection == MatchingDirection.FORWARD) {
+				while(!newDateTime.isAfter(matchingDateTime)) {
+					newDateTime = newDateTime.plusDays(1);
+				}
+			}
+			else {
+				while(!newDateTime.isBefore(matchingDateTime)) {
+					newDateTime = newDateTime.plusDays(-1);
+				}
+			}
+			matchingDateTime = newDateTime
+					.withHour(hour != null? hour : 0)
+					.withMinute(minute != null ? minute : 0);
+		}
+		else if (weekOfMonth != null) {
+			LocalDateTime newDateTime = matchingDateTime
+					.with(WeekFields.ISO.weekOfMonth(), weekOfMonth) // locate week of month
+					.with(WeekFields.ISO.dayOfWeek(), 1); // locate first day of week
+			if (matchingDirection == MatchingDirection.FORWARD) {
+				while(!newDateTime.isAfter(matchingDateTime)) {
+					newDateTime = newDateTime.plusDays(1);
+				}
+			}
+			else {
+				while(!newDateTime.isBefore(matchingDateTime)) {
+					newDateTime = newDateTime.plusDays(-1);
+				}
+			}
+			matchingDateTime = newDateTime
+					.withHour(hour != null? hour : 0)
+					.withMinute(minute != null ? minute : 0);
+		} 
+		
 		if (weekday != null) {
 			if (weekdayOrdinal != null) {
 				LocalDateTime newDateTime = matchingDateTime
 						.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 				if (matchingDirection == MatchingDirection.FORWARD) {
 					while(!newDateTime.isAfter(matchingDateTime)) {
-						newDateTime = matchingDateTime
+						newDateTime = newDateTime
 								.plusMonths(1)
 								.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 					}
 				}
 				else {
 					while(!newDateTime.isBefore(matchingDateTime)) {
-						newDateTime = matchingDateTime
-								.minusMonths(1)
+						newDateTime = newDateTime
+								.plusMonths(-1)
 								.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 					}
 				}
 				matchingDateTime = newDateTime;
-			}
+			} // end of if (weekdayOrdinal != null) {
 			else {
 				if (matchingDirection == MatchingDirection.FORWARD) {
 					matchingDateTime = matchingDateTime
@@ -113,31 +158,7 @@ public class Enumerator {
 			matchingDateTime = matchingDateTime
 					.withHour(hour != null ? hour : 0)
 					.withMinute(minute != null ? minute : 0);
-		}
-		
-		if (quarter != null) {
-			// not yet implemented
-			assert quarter == null;
-//			matchingDateTime = matchingDateTime
-//					.withMonth(matchingDateTime.get(IsoFields.QUARTER_OF_YEAR) * 3)
-//					.with(TemporalAdjusters.lastDayOfMonth())
-//					.plusDays(1)
-//					.withHour(hour != null? hour : 0)
-//					.withMinute(minute != null ? minute : 0);
-		}
-		
-		if (weekOfMonth != null) {
-			// not yet implemented
-			assert weekOfMonth == null;
-			// locate the first day of next week of month
-			//matchingDateTime.get(WeekFields.ISO.weekOfMonth())
-			//System.out.println(matchingDateTime.with(WeekFields.ISO.weekOfMonth(), 1));
-		}
-		
-		if (weekOfYear != null) {
-			// not yet implemented
-			assert weekOfYear == null;
-		}
+		} // end of if (weekday != null) {
 	}
 	
 	public boolean match(LocalDateTime dt) {
@@ -163,20 +184,62 @@ public class Enumerator {
 						.withDayOfMonth(day != null ? day : 1)
 						.withHour(hour != null ? hour : 0)
 						.withMinute(minute != null ? minute : 0);
+				
+				if (quarter != null) {
+					
+				}
+				
+				if (weekOfYear != null) {
+					newDateTime = newDateTime
+							.with(WeekFields.ISO.weekOfYear(), weekOfYear) // locate week of year
+							.with(WeekFields.ISO.dayOfWeek(), 1); // locate first day of week
+					if (matchingDirection == MatchingDirection.FORWARD) {
+						while(!newDateTime.isAfter(matchingDateTime)) {
+							newDateTime = newDateTime.plusDays(1);
+						}
+					}
+					else {
+						while(!newDateTime.isBefore(matchingDateTime)) {
+							newDateTime = newDateTime.plusDays(-1);
+						}
+					}
+					matchingDateTime = newDateTime
+							.withHour(hour != null? hour : 0)
+							.withMinute(minute != null ? minute : 0);
+				}
+				else if (weekOfMonth != null) {
+					newDateTime = newDateTime
+							.with(WeekFields.ISO.weekOfMonth(), weekOfMonth) // locate week of month
+							.with(WeekFields.ISO.dayOfWeek(), 1); // locate first day of week
+					if (matchingDirection == MatchingDirection.FORWARD) {
+						while(!newDateTime.isAfter(matchingDateTime)) {
+							newDateTime = newDateTime.plusDays(1);
+						}
+					}
+					else {
+						while(!newDateTime.isBefore(matchingDateTime)) {
+							newDateTime = newDateTime.plusDays(-1);
+						}
+					}
+					matchingDateTime = newDateTime
+							.withHour(hour != null? hour : 0)
+							.withMinute(minute != null ? minute : 0);
+				}
+				
 				if (weekday != null) {
 					if (weekdayOrdinal != null) {
-						newDateTime = matchingDateTime
+						newDateTime = newDateTime
 								.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 						if (matchingDirection == MatchingDirection.FORWARD) {
 							while(!newDateTime.isAfter(matchingDateTime)) {
-								newDateTime = matchingDateTime
+								newDateTime = newDateTime
 										.plusMonths(1)
 										.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 							}
 						}
 						else {
 							while(!newDateTime.isBefore(matchingDateTime)) {
-								newDateTime = matchingDateTime
+								newDateTime = newDateTime
 										.minusMonths(1)
 										.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 							}
@@ -193,11 +256,12 @@ public class Enumerator {
 						}
 					}
 				}
+				
 				if (match(newDateTime)) {
 					matchingDateTime = newDateTime;
 					countOfMatches ++;
 					matchingCallback.onMatched(countOfMatches, matchingDateTime);
-					enumerateByMinute();
+					return enumerateByMinute(); // try enumerating by minute from the beginning of new year
 				}
 				else return false; // no more time for matching
 			}
@@ -214,21 +278,59 @@ public class Enumerator {
 						.withDayOfMonth(day != null ? day : 1)
 						.withHour(hour != null ? hour : 0)
 						.withMinute(minute != null ? minute : 0);
+				
+				if (weekOfYear != null) {
+					newDateTime = newDateTime
+							.with(WeekFields.ISO.weekOfYear(), weekOfYear) // locate week of year
+							.with(WeekFields.ISO.dayOfWeek(), 1); // locate first day of week
+					if (matchingDirection == MatchingDirection.FORWARD) {
+						while(!newDateTime.isAfter(matchingDateTime)) {
+							newDateTime = newDateTime.plusDays(1);
+						}
+					}
+					else {
+						while(!newDateTime.isBefore(matchingDateTime)) {
+							newDateTime = newDateTime.plusDays(-1);
+						}
+					}
+					matchingDateTime = newDateTime
+							.withHour(hour != null? hour : 0)
+							.withMinute(minute != null ? minute : 0);
+				}
+				else if (weekOfMonth != null) {
+					newDateTime = newDateTime
+							.with(WeekFields.ISO.weekOfMonth(), weekOfMonth) // locate week of month
+							.with(WeekFields.ISO.dayOfWeek(), 1); // locate first day of week
+					if (matchingDirection == MatchingDirection.FORWARD) {
+						while(!newDateTime.isAfter(matchingDateTime)) {
+							newDateTime = newDateTime.plusDays(1);
+						}
+					}
+					else {
+						while(!newDateTime.isBefore(matchingDateTime)) {
+							newDateTime = newDateTime.plusDays(-1);
+						}
+					}
+					matchingDateTime = newDateTime
+							.withHour(hour != null? hour : 0)
+							.withMinute(minute != null ? minute : 0);
+				}
+				
 				if (weekday != null) {
 					if (weekdayOrdinal != null) {
-						newDateTime = matchingDateTime
+						newDateTime = newDateTime
 								.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 						if (matchingDirection == MatchingDirection.FORWARD) {
 							while(!newDateTime.isAfter(matchingDateTime)) {
-								newDateTime = matchingDateTime
+								newDateTime = newDateTime
 										.plusMonths(1)
 										.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 							}
 						}
 						else {
 							while(!newDateTime.isBefore(matchingDateTime)) {
-								newDateTime = matchingDateTime
-										.minusMonths(1)
+								newDateTime = newDateTime
+										.plusMonths(-1)
 										.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 							}
 						}
@@ -244,6 +346,7 @@ public class Enumerator {
 						}
 					}
 				}
+				
 				if (match(newDateTime)) {
 					matchingDateTime = newDateTime;
 					countOfMatches ++;
@@ -257,11 +360,6 @@ public class Enumerator {
 		else return enumerateByYear(); // fixed month, try enumerating by year
 	}
 	
-	/*
-	 * weekday & weekdayOrdinal
-	 * weekday
-	 * day
-	 * */
 	private boolean enumerateByWeekdayOrDay() {
 		if (weekday != null) {
 			if (weekdayOrdinal != null) { // try enumerating by weekday & weekday ordinal
@@ -270,22 +368,25 @@ public class Enumerator {
 							.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 					if (matchingDirection == MatchingDirection.FORWARD) {
 						while(!newDateTime.isAfter(matchingDateTime)) {
-							newDateTime = matchingDateTime
+							newDateTime = newDateTime
 									.plusMonths(1)
 									.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 						}
 					}
 					else {
 						while(!newDateTime.isBefore(matchingDateTime)) {
-							newDateTime = matchingDateTime
+							newDateTime = newDateTime
 									.minusMonths(1)
 									.with(TemporalAdjusters.dayOfWeekInMonth(weekdayOrdinal, DayOfWeek.of(weekday)));
 						}
 					}
-					matchingDateTime = newDateTime;
-					countOfMatches ++;
-					matchingCallback.onMatched(countOfMatches, matchingDateTime);
-					return enumerateByMinute(); // try enumerating by minute from the beginning of new weekday
+					if (match(newDateTime)) {
+						matchingDateTime = newDateTime;
+						countOfMatches ++;
+						matchingCallback.onMatched(countOfMatches, matchingDateTime);
+						return enumerateByMinute(); // try enumerating by minute from the beginning of new weekday
+					}
+					else if (!enumerateByMonth()) return false; // try enumerating by month
 				}
 				return true;
 			}
@@ -313,7 +414,7 @@ public class Enumerator {
 				}
 				return true;
 			}
-		}
+		} // end of if (weekday != null) {
 		else {
 			// try enumerating by Day
 			if (day == null) {
@@ -331,7 +432,7 @@ public class Enumerator {
 					else if (!enumerateByMonth()) return false; // try enumerating by month
 				}
 				return true;
-			}
+			} // end of if (day == null) {
 			else return enumerateByMonth(); // fixed day, try enumerating by month
 		}
 	}

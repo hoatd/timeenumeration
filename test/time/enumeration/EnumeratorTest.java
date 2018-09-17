@@ -56,6 +56,7 @@ class EnumeratorTest {
 
 	@Test
 	void testEnumerate1() {
+		System.out.println("testEnumerate1");
 		LocalDateTime machingDateTime = LocalDateTime.of(LocalDate.of(2018, 9, 4), LocalTime.of(11, 06));
 		EnumMap<MatchingComponent, Integer> matchingComponents = 
 				new EnumMap<MatchingComponent, Integer>(MatchingComponent.class);
@@ -64,7 +65,7 @@ class EnumeratorTest {
 		matchingComponents.put(MatchingComponent.HOUR, 11);
 		matchingComponents.put(MatchingComponent.MINUTE, 6);
 		MatchingDirection matchingDirection = MatchingDirection.FORWARD;
-		int maxNumOfMatches = 2;
+		int maxNumOfMatches = 200;
 		List<LocalDateTime> matchedDateTimes = new ArrayList<LocalDateTime>();
 		MatchingCallback matchingCallback = (matchedCount, matchedValue)-> {
 			matchedDateTimes.add(matchedValue);
@@ -83,6 +84,7 @@ class EnumeratorTest {
 
 	@Test
 	void testEnumerate2() {
+		System.out.println("testEnumerate2");
 		LocalDateTime machingDateTime = LocalDateTime.of(LocalDate.of(2018, 9, 4), LocalTime.of(11, 06));
 		EnumMap<MatchingComponent, Integer> matchingComponents = 
 				new EnumMap<MatchingComponent, Integer>(MatchingComponent.class);
@@ -110,11 +112,13 @@ class EnumeratorTest {
 	
 	@Test
 	void testEnumerate3() {
+		System.out.println("testEnumerate3");
 		LocalDateTime machingDateTime = LocalDateTime.of(LocalDate.of(2018, 9, 4), LocalTime.of(11, 06));
 		EnumMap<MatchingComponent, Integer> matchingComponents = 
 				new EnumMap<MatchingComponent, Integer>(MatchingComponent.class);
-		matchingComponents.put(MatchingComponent.YEAR, 2018);
+		//matchingComponents.put(MatchingComponent.YEAR, 2018);
 		matchingComponents.put(MatchingComponent.MONTH, 9);
+		matchingComponents.put(MatchingComponent.HOUR, 1);
 		matchingComponents.put(MatchingComponent.MINUTE, 30);
 		matchingComponents.put(MatchingComponent.WEEKDAY, 1);
 		matchingComponents.put(MatchingComponent.WEEKDAY_ORDINAL, 2);
@@ -135,4 +139,65 @@ class EnumeratorTest {
 		int countOfMatches = enumerator.enumerate();
 		System.out.printf("Total of matched dates was %d\n", countOfMatches);
 	}
+	
+	@Test
+	void testEnumerate4() {
+		System.out.println("testEnumerate4");
+		// Test for weekOfMonth
+		LocalDateTime machingDateTime = LocalDateTime.of(LocalDate.of(2018, 9, 14), LocalTime.of(11, 06));
+		EnumMap<MatchingComponent, Integer> matchingComponents = 
+				new EnumMap<MatchingComponent, Integer>(MatchingComponent.class);
+		//matchingComponents.put(MatchingComponent.YEAR, 2018);
+		matchingComponents.put(MatchingComponent.MONTH, 9);
+		matchingComponents.put(MatchingComponent.HOUR, 1);
+		matchingComponents.put(MatchingComponent.MINUTE, 30);
+		matchingComponents.put(MatchingComponent.WEEK_OF_MONTH, 2);
+		MatchingDirection matchingDirection = MatchingDirection.FORWARD;
+		int maxNumOfMatches = 200;
+		List<LocalDateTime> matchedDateTimes = new ArrayList<LocalDateTime>();
+		MatchingCallback matchingCallback = (matchedCount, matchedValue)-> {
+			matchedDateTimes.add(matchedValue);
+			System.out.printf("Match#%d: %s\n", matchedCount,
+					DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").format(matchedValue));
+			}; 
+		Enumerator enumerator = new Enumerator(
+				machingDateTime, matchingComponents,
+				matchingDirection, maxNumOfMatches, matchingCallback);
+		printDateTime(machingDateTime);
+		printMatchingComponents(matchingComponents);
+		System.out.println("Max. matching number: " + maxNumOfMatches);
+		int countOfMatches = enumerator.enumerate();
+		System.out.printf("Total of matched dates was %d\n", countOfMatches);
+	}
+	
+	@Test
+	void testEnumerate5() {
+		System.out.println("testEnumerate5");
+		// Test for weekOfYear
+		LocalDateTime machingDateTime = LocalDateTime.of(LocalDate.of(2018, 9, 14), LocalTime.of(11, 06));
+		EnumMap<MatchingComponent, Integer> matchingComponents = 
+				new EnumMap<MatchingComponent, Integer>(MatchingComponent.class);
+		//matchingComponents.put(MatchingComponent.YEAR, 2018);
+		matchingComponents.put(MatchingComponent.HOUR, 1);
+		matchingComponents.put(MatchingComponent.MINUTE, 30);
+		matchingComponents.put(MatchingComponent.WEEK_OF_YEAR, 40);
+		MatchingDirection matchingDirection = MatchingDirection.FORWARD;
+		int maxNumOfMatches = 200;
+		List<LocalDateTime> matchedDateTimes = new ArrayList<LocalDateTime>();
+		MatchingCallback matchingCallback = (matchedCount, matchedValue)-> {
+			matchedDateTimes.add(matchedValue);
+			System.out.printf("Match#%d: %s\n", matchedCount,
+					DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").format(matchedValue));
+			}; 
+		Enumerator enumerator = new Enumerator(
+				machingDateTime, matchingComponents,
+				matchingDirection, maxNumOfMatches, matchingCallback);
+		printDateTime(machingDateTime);
+		printMatchingComponents(matchingComponents);
+		System.out.println("Max. matching number: " + maxNumOfMatches);
+		int countOfMatches = enumerator.enumerate();
+		System.out.printf("Total of matched dates was %d\n", countOfMatches);
+	}
+	
+	
 }
