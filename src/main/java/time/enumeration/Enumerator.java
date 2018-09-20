@@ -12,17 +12,47 @@ import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
 import java.util.EnumMap;
 
-import time.Utils;
 
 /**
- * @author hoatranduy
- *
+ * Represents the Enumerator model for date matching enumeration. Matching components are
+ * one or more of: {@code year, quarter, month, day, hour, minute, weekOfMonth, weekOfYear, weekday,
+ * weekdayOrdinal}. The direction of matching is either backward or forward. It decides
+ * matched dates are occurred in the past or future from a given date.
+ * <p>
+ * For example, list maximum {@code 200} dates of every {@code Monday}in
+ * {@code September 2018} at each minute {@code 30}th after {@code 04/09/2018 11:06}:
+ * <pre>{@code
+ * // create the date object
+ * LocalDateTime matchingDateTime = LocalDateTime.of(LocalDate.of(2018, 9, 4), LocalTime.of(11, 06));
+ * // matching dates in the future by forward direction
+ * MatchingDirection matchingDirection = MatchingDirection.FORWARD;
+ * // create a collection of matching components as EnumMap 
+ * EnumMap<MatchingComponent, Integer> matchingComponents = new EnumMap<MatchingComponent, Integer>(MatchingComponent.class);
+ * // define matching component for year, month, day, minute, and weekday by their corresponding value
+ * matchingComponents.put(MatchingComponent.YEAR, 2018);
+ * matchingComponents.put(MatchingComponent.MONTH, 9);
+ * matchingComponents.put(MatchingComponent.DAY, 4);
+ * matchingComponents.put(MatchingComponent.MINUTE, 30);
+ * matchingComponents.put(MatchingComponent.WEEKDAY, 1);
+ * // Maximum of matches is 200
+ * int maxNumOfMatches = 200;
+ * // Define code block that prints the matched date object
+ * MatchingCallback matchingCallback = (matchedCount, matchedValue) -> {
+ *	System.out.printf("Match#%d: %s\n", matchedCount, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").format(matchedValue));
+ * };
+ * // Create a enumerator object with desired parameters 
+ * Enumerator enumerator = new Enumerator(matchingDateTime, matchingDirection, matchingComponents, maxNumOfMatches, matchingCallback);
+ * // Do enumerating and get the actual number of matches
+ * int countOfMatches = enumerator.enumerate();
+ * // Print total of matches 
+ * System.out.printf("Total of matched dates are %d\n", countOfMatches);
+ * }</pre>
  */
 public class Enumerator {
 	LocalDateTime originDateTime;
+	MatchingDirection matchingDirection;
 	int maxNumOfMatches;
 	MatchingCallback matchingCallback;
-	MatchingDirection matchingDirection;
 	
 	LocalDateTime matchingDateTime;
 	int countOfMatches;
@@ -39,16 +69,20 @@ public class Enumerator {
 	Integer weekOfYear;
 
 	/**
-	 * @param matchingDateTime
-	 * @param mactchingComponents
-	 * @param matchingDirection
-	 * @param maxNumOfMatches
-	 * @param matchingCallback
+	 * Constructs a Enumerator object with a date object, direction of enumeration,
+	 * matching components, maximum number of matches, and a code block to be triggered
+	 * for each match.
+	 * 
+	 * @param matchingDateTime A date object
+	 * @param matchingDirection A direction of matching enumeration
+	 * @param matchingComponents Matching components
+	 * @param maxNumOfMatches Maximum number of matching dates
+	 * @param matchingCallback A code block to trigger with each calculated date
 	 */
 	public Enumerator(
 			LocalDateTime matchingDateTime,
-			EnumMap<MatchingComponent, Integer> matchingComponents,
 			MatchingDirection matchingDirection,
+			EnumMap<MatchingComponent, Integer> matchingComponents,
 			int maxNumOfMatches,
 			MatchingCallback matchingCallback) {
 		
@@ -69,6 +103,16 @@ public class Enumerator {
 		weekOfYear = matchingComponents.get(MatchingComponent.WEEK_OF_YEAR);
 		
 		matchFirst();
+	}
+	
+	private static int getOrdinalOfWeek(LocalDateTime dt) {
+		/* determine the sequential ordinal number of a weekday.
+		 * i.e. if a Friday is the first or 3rd Friday of a month.
+		 * take the day of month, subtract 1, divide by 7, then add 1.
+		 * The first seven days of the month are always the first (Tuesday,
+		 * Wednesday, ...) whatever day of the week the actual 1st of the month is.
+		 * */
+	    return ((dt.getDayOfMonth() - 1) / 7) + 1;
 	}
 	
 	private void matchFirst() {
@@ -183,6 +227,12 @@ public class Enumerator {
 		} // end of if (weekday != null) {
 	}
 	
+	/**
+	 * Check if the given date object matches provided matching components
+	 * 
+	 * @param dt A date object
+	 * @return True if match, otherwise False 
+	 */
 	public boolean match(LocalDateTime dt) {
 		if (year != null && dt.getYear() != year) return false;
 		if (month != null && dt.getMonthValue() != month) return false;
@@ -190,7 +240,7 @@ public class Enumerator {
 		if (hour != null && dt.getHour() != hour) return false;
 		if (minute != null && dt.getMinute() != minute) return false;
 		if (weekday != null && dt.get(WeekFields.ISO.dayOfWeek()) != weekday) return false;
-		if (weekday != null && weekdayOrdinal != null && Utils.getOrdinalOfWeek(dt) != weekdayOrdinal) return false;
+		if (weekday != null && weekdayOrdinal != null && getOrdinalOfWeek(dt) != weekdayOrdinal) return false;
 		if (quarter != null && dt.get(IsoFields.QUARTER_OF_YEAR) != quarter) return false;
 		if (weekOfMonth != null && dt.get(WeekFields.ISO.weekOfMonth()) != weekOfMonth) return false;
 		if (weekOfYear != null && dt.get(WeekFields.ISO.weekOfYear()) != weekOfYear) return false;
@@ -309,7 +359,7 @@ public class Enumerator {
 				if (match(newDateTime)) {
 					matchingDateTime = newDateTime;
 					countOfMatches ++;
-					matchingCallback.onMatched(countOfMatches, matchingDateTime);
+					if (matchingCallback != null) matchingCallback.onMatched(countOfMatches, matchingDateTime);
 					return enumerateByMinute(); // try enumerating by minute from the beginning of new year
 				}
 				else return false; // no more time for matching
@@ -430,7 +480,7 @@ public class Enumerator {
 				if (match(newDateTime)) {
 					matchingDateTime = newDateTime;
 					countOfMatches ++;
-					matchingCallback.onMatched(countOfMatches, matchingDateTime);
+					if (matchingCallback != null) matchingCallback.onMatched(countOfMatches, matchingDateTime);
 					return enumerateByMinute(); // try enumerating by minute from the beginning of new year
 				}
 				else if (!enumerateByYear()) return false; // try enumerating by year
@@ -463,7 +513,7 @@ public class Enumerator {
 					if (match(newDateTime)) {
 						matchingDateTime = newDateTime;
 						countOfMatches ++;
-						matchingCallback.onMatched(countOfMatches, matchingDateTime);
+						if (matchingCallback != null) matchingCallback.onMatched(countOfMatches, matchingDateTime);
 						return enumerateByMinute(); // try enumerating by minute from the beginning of new weekday
 					}
 					else if (!enumerateByMonth()) return false; // try enumerating by month
@@ -487,7 +537,7 @@ public class Enumerator {
 					if (match(newDateTime)) {
 						matchingDateTime = newDateTime;
 						countOfMatches ++;
-						matchingCallback.onMatched(countOfMatches, matchingDateTime);
+						if (matchingCallback != null) matchingCallback.onMatched(countOfMatches, matchingDateTime);
 						return enumerateByMinute(); // try enumerating by minute from the beginning of new weekday
 					}
 					else if (!enumerateByMonth()) return false; // try enumerating by month
@@ -506,7 +556,7 @@ public class Enumerator {
 					if (match(newDateTime)) {
 						matchingDateTime = newDateTime;
 						countOfMatches ++;
-						matchingCallback.onMatched(countOfMatches, matchingDateTime);
+						if (matchingCallback != null) matchingCallback.onMatched(countOfMatches, matchingDateTime);
 						return enumerateByMinute(); // try enumerating by minute from the beginning of new day
 					}
 					else if (!enumerateByMonth()) return false; // try enumerating by month
@@ -526,7 +576,7 @@ public class Enumerator {
 				if (match(newDateTime)) {
 					matchingDateTime = newDateTime;
 					countOfMatches ++;
-					matchingCallback.onMatched(countOfMatches, matchingDateTime);
+					if (matchingCallback != null) matchingCallback.onMatched(countOfMatches, matchingDateTime);
 					return enumerateByMinute(); // try enumerating by minute from the beginning of new hour
 				}
 				else if (!enumerateByWeekdayOrDay()) return false; // try enumerating by day or weekday
@@ -544,7 +594,7 @@ public class Enumerator {
 				if (match(newDateTime)) {
 					matchingDateTime = newDateTime;
 					countOfMatches ++;
-					matchingCallback.onMatched(countOfMatches, matchingDateTime);
+					if (matchingCallback != null) matchingCallback.onMatched(countOfMatches, matchingDateTime);
 				}
 				else if (!enumerateByHour()) return false; // try enumerating by hour 
 			}
@@ -553,11 +603,16 @@ public class Enumerator {
 		else return enumerateByHour(); // fixed minute, try enumerating by hour
 	}
 	
+	/**
+	 * Enumerate matching dates until reaches maximum number of matches or no more match found. 
+	 * 
+	 * @return Number of matched dates 
+	 */
 	public int enumerate() {
 		if ((matchingDirection == MatchingDirection.FORWARD && matchingDateTime.isAfter(originDateTime))
 				|| (matchingDirection == MatchingDirection.BACKWARD && matchingDateTime.isBefore(originDateTime))) {
 			countOfMatches ++;
-			matchingCallback.onMatched(countOfMatches, matchingDateTime);
+			if (matchingCallback != null) matchingCallback.onMatched(countOfMatches, matchingDateTime);
 		}
 		enumerateByMinute();
 		return this.countOfMatches;

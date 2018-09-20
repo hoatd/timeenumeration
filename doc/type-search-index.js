@@ -1,0 +1,1 @@
+typeSearchIndex = [{"p":"time.enumeration","l":"Enumerator"}]
